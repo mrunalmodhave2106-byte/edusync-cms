@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduSync — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon-sm">🎓</div>
+    <div>
+      <div class="logo-name">EduSync</div>
+      <div class="logo-sub">College Management</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebarNav">
+    <!-- Populated by JS based on role -->
+  </nav>
+
+  <div class="sidebar-user" id="sidebarUser"></div>
+</aside>
+
+<!-- Main -->
+<main class="main-content">
+  <header class="topbar">
+    <div class="topbar-left">
+      <h2 class="page-title" id="pageTitle">Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <div class="pipeline-badge" id="pipelineBadge">● Build #247 Live</div>
+      <div class="notif-bell" onclick="navigate('notifications')">
+        🔔 <span class="notif-count" id="notifCount" style="display:none">0</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="content-area" id="contentArea">
+    <!-- Pages rendered here -->
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
