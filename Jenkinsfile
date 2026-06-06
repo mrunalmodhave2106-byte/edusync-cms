@@ -1,8 +1,3 @@
-// =============================================
-//  EduSync — Jenkinsfile
-//  No Docker · No Terraform · SSH deploy to EC2
-//  Trigger: GitHub webhook on push to main / feature/*
-// =============================================
 pipeline {
   agent any
 
