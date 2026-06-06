@@ -9,7 +9,7 @@ pipeline {
 
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
-    timeout(time: 20, unit: 'MINUTES')
+    timeout(time: 30, unit: 'MINUTES')
     timestamps()
     disableConcurrentBuilds()
   }
@@ -35,7 +35,7 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         dir('backend') {
-          sh 'npm install'
+          sh 'npm install --verbose'
         }
       }
     }
@@ -63,7 +63,7 @@ pipeline {
           git fetch origin main
           git reset --hard origin/main
           cd backend
-          npm install --omit=dev
+          npm install --omit=dev --verbose
           pm2 restart ${PM2_APP} --update-env || pm2 start app.js --name ${PM2_APP}
           pm2 save
         """
