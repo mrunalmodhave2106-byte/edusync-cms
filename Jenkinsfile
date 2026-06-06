@@ -35,7 +35,7 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         dir('backend') {
-          sh 'npm install --verbose'
+          sh 'npm ci'
         }
       }
     }
