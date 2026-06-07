@@ -3,7 +3,7 @@ pipeline {
 
   environment {
     APP_DIR     = '/home/ubuntu/edusync'
-    PM2_APP     = 'edusync-api'
+    PM2_APP     = 'edusync-backend'
     FRONTEND_DIR= '/var/www/html/edusync'
   }
 
@@ -35,7 +35,7 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         dir('backend') {
-          sh 'npm ci'
+          sh 'sudo npm install'
         }
       }
     }
