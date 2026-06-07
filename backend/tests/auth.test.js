@@ -1,3 +1,6 @@
+jest.mock('../db/pool', () => ({
+     query: jest.fn().mockResolvedValue({ rows: [] })
+}));
 // tests/auth.test.js
 const request = require('supertest');
 const app     = require('../app');
