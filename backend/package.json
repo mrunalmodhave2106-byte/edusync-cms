@@ -8,7 +8,7 @@
     "dev":     "nodemon app.js",
     "test":    "jest --coverage --forceExit",
     "test:ci": "jest --coverage --ci --forceExit --reporters=default --reporters=jest-junit",
-    "lint":    "eslint . --ext .js --ignore-path .eslintignore",
+    "lint":    "eslint . --ext .js .eslintignore",
     "lint:fix":"eslint . --ext .js --fix"
   },
   "dependencies": {
