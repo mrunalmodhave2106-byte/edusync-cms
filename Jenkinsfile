@@ -35,7 +35,7 @@ pipeline {
     stage('Install Dependencies') {
       steps {
         dir('backend') {
-          sh 'sudo npm install'
+          sh 'npm ci'
         }
       }
     }
