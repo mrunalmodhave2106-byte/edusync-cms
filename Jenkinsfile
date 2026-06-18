@@ -105,7 +105,10 @@ pipeline {
 
             # Navigate to app directory
             cd ${APP_DIR}
-
+            
+            # FIX: Tell git to trust this directory (handles ownership issues)
+            git config --global --add safe.directory ${APP_DIR} 2>/dev/null || true
+            
             # Verify git repo is available
             if [ ! -d ".git" ]; then
               echo "Initializing git repository..."
