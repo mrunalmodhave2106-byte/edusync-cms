@@ -9,6 +9,7 @@ pipeline {
     NODE_ENV       = 'production'
     HEALTH_CHECK_URL = 'http://localhost:4000/health'
     MAX_RETRIES    = '15'
+    PORT           = '4000'
   }
   
   options {
@@ -107,7 +108,17 @@ pipeline {
           echo "✓ Creating deployment directories..."
           mkdir -p ${APP_DIR}
           mkdir -p ${FRONTEND_DIR}
-          mkdir -p /home/ubuntu/edusync-backup
+          
+          # Create backup directory with sudo if needed
+          echo "✓ Creating backup directory..."
+          if [ ! -d /home/ubuntu/edusync-backup ]; then
+            sudo mkdir -p /home/ubuntu/edusync-backup
+            sudo chown jenkins:jenkins /home/ubuntu/edusync-backup
+            sudo chmod 755 /home/ubuntu/edusync-backup
+            echo "  Created and configured backup directory"
+          else
+            echo "  Backup directory already exists"
+          fi
           
           echo "✓ Checking directory permissions..."
           ls -ld ${APP_DIR}
@@ -125,31 +136,29 @@ pipeline {
           echo "Deploying Backend Application"
           echo "========================================"
           
-          echo "Stopping previous instance (${PM2_APP})..."
+          # Kill any existing process on the port
+          echo "Stopping any process on port ${PORT}..."
+          if command -v lsof &> /dev/null; then
+            lsof -i :${PORT} | grep -v COMMAND | awk '{print $2}' | xargs -r kill -9 || true
+            echo "✓ Killed process on port ${PORT}"
+          fi
+          
+          # Kill PM2 process and wait
+          echo "Stopping PM2 process (${PM2_APP})..."
           pm2 stop ${PM2_APP} 2>/dev/null || true
+          pm2 delete ${PM2_APP} 2>/dev/null || true
           sleep 2
           
           cd ${APP_DIR}
           
-          # FIX: Configure git to trust this directory
+          # Configure git to trust this directory
           echo "Configuring git safe directory..."
           git config --global --add safe.directory ${APP_DIR} 2>/dev/null || true
           
-          # FIX: Ensure proper ownership for git operations
-          echo "Verifying repository ownership..."
+          # Verify repository ownership for git operations
+          echo "Verifying repository access..."
           if [ -d .git ]; then
-            # Get current user running Jenkins
-            CURRENT_USER=$(whoami)
-            echo "Current user: ${CURRENT_USER}"
-            
-            # Attempt git operations to verify access
             echo "Testing git fetch access..."
-            git fetch origin main --depth=1
-            echo "✓ Git fetch successful"
-          fi
-          
-          if [ ! -d .git ]; then
-            echo "Pulling latest code from origin/main..."
             git fetch origin main --depth=1
             echo "✓ Git fetch successful"
           fi
@@ -161,18 +170,28 @@ pipeline {
           echo "Installing production dependencies..."
           npm ci --omit=dev --verbose 2>&1 | tail -20
           
-          echo "Creating backup..."
-          cp -r ${BACKEND_DIR} /home/ubuntu/edusync-backup/backend-$(date +%Y%m%d-%H%M%S) 2>/dev/null || true
+          echo "Creating timestamped backup..."
+          BACKUP_DIR="/home/ubuntu/edusync-backup/backend-$(date +%Y%m%d-%H%M%S)"
+          mkdir -p "$BACKUP_DIR"
+          cp -r . "$BACKUP_DIR/" 2>/dev/null || true
+          echo "✓ Backup created at: $BACKUP_DIR"
+          
+          # Wait to ensure port is free
+          echo "Waiting for port to be released..."
+          sleep 3
+          
+          # Verify port is free before starting
+          echo "Verifying port ${PORT} is available..."
+          if command -v lsof &> /dev/null; then
+            if lsof -i :${PORT} > /dev/null 2>&1; then
+              echo "ERROR: Port ${PORT} is still in use!"
+              lsof -i :${PORT}
+              exit 1
+            fi
+          fi
           
           echo "Starting PM2 process..."
-          # Check if process already exists
-          if pm2 describe ${PM2_APP} > /dev/null 2>&1; then
-            echo "Restarting existing PM2 process..."
-            pm2 restart ${PM2_APP} --update-env
-          else
-            echo "Starting new PM2 process..."
-            pm2 start app.js --name ${PM2_APP} --env production
-          fi
+          pm2 start app.js --name ${PM2_APP} --env production
           
           pm2 save
           pm2 list
@@ -253,27 +272,21 @@ pipeline {
         '''
       }
     }
-    
-    stage('Post Actions') {
-      steps {
-        script {
-          if (currentBuild.result == 'SUCCESS') {
-            sh '''
-              echo "========================================"
-              echo "Deployment Successful!"
-              echo "========================================"
-              echo "Application is now running:"
-              echo "- Backend: http://localhost:4000"
-              echo "- Frontend: http://localhost (via Nginx)"
-              pm2 list
-            '''
-          }
-        }
-      }
-    }
   }
   
   post {
+    success {
+      sh '''
+        echo "========================================"
+        echo "Deployment Successful! 🎉"
+        echo "========================================"
+        echo "Application is now running:"
+        echo "- Backend: http://localhost:4000"
+        echo "- Frontend: http://localhost (via Nginx)"
+        pm2 list
+      '''
+    }
+    
     failure {
       sh '''
         echo "========================================"
@@ -287,15 +300,21 @@ pipeline {
         echo ""
         echo "Directory Structure:"
         ls -la ${APP_DIR} || echo "Directory not found"
+        echo ""
+        echo "Port ${PORT} status:"
+        lsof -i :${PORT} || echo "Port ${PORT} is free"
       '''
     }
     
     always {
       sh '''
-        echo "Build Summary:"
-        echo "- Build Number: ${BUILD_NUMBER}"
-        echo "- Build Status: ${currentBuild.result}"
-        echo "- Duration: ${currentBuild.durationString}"
+        echo "========================================"
+        echo "Build Summary"
+        echo "========================================"
+        echo "Build Number: ${BUILD_NUMBER}"
+        echo "Build Status: ${currentBuild.result}"
+        echo "Duration: ${currentBuild.durationString}"
+        echo "========================================"
       '''
     }
   }
